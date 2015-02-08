@@ -191,15 +191,89 @@ public:
   }
 };
 
-/* TODO
 class SwitchingRotary : public Control {
+private:
+  int _last;
+  int _pin;
+  int _axis;
+  int _dxButtonOn;
+  int _dxButtonOff;
+  int _countdown;
+  int _duration;
+  int _threshold;
+  void (*_dxAxis)(int val);
+  
+public:
+  SwitchingRotary(int pin, void (*dxAxis)(int val), int dxButtonOn, int dxButtonOff, int duration, int threshold) {
+    _pin = pin;
+    _dxButtonOn = dxButtonOn;
+    _dxButtonOff = dxButtonOff;
+    _duration = duration;
+    _last = -1;
+    _threshold = threshold;
+    _dxAxis = dxAxis;
+  }
+  
+  virtual void setup() {
+  }
+  
+  virtual void update() {
+    int val = analogRead(_pin);
+
+    LOG("Switching rotary read val: ");
+    LOGLN(val);
+    
+    if ((val >= _threshold) && (_last < _threshold)) {
+      LOG("Pressing button: ");
+      LOGLN(_dxButtonOn);
+      Gamepad.press(_dxButtonOn);
+      Gamepad.release(_dxButtonOff);
+      _countdown = _duration; 
+    }
+    else if ((val <= _threshold) && (_last > _threshold)) {
+      LOG("Pressing button: ");
+      LOGLN(_dxButtonOff);
+      Gamepad.release(_dxButtonOn);
+      Gamepad.press(_dxButtonOff);
+      _countdown = _duration; 
+    }
+    else if (val >= _threshold) {
+      long newVal = long((float(val) - _threshold) * 1024.0 * 64.0 / (1024.0 - _threshold)) - 32768;
+      LOG("Switching rotary (above threshold) set axis to: ");
+      LOGLN(newVal);
+      
+       _dxAxis(newVal);
+    }                                                                                                                                                                                                                                      
+    else {
+      LOGLN("Switching rotary (below threshold) set axis to: -32767");
+      _dxAxis(-32767);
+    }
+    
+    if (_countdown > 0) {
+      _countdown--;
+    }
+    else {
+      LOGLN("Releasing all buttons");
+      Gamepad.release(_dxButtonOn);
+      Gamepad.release(_dxButtonOff);
+    }
+    
+    _last = val;
+  }
+};
+
+void xAxis(int val) {
+  Gamepad.xAxis(val);
 }
-*/
 
 Control* controls[] = 
-{ //new PushButton(2, 1),
-  //new PushButton(3, 2)
-  new OnOffSwitch(3, 1, 2, 3)
+{ new PushButton(2, 1),    // FACK
+  new PushButton(3, 2),    // MSTR CTN
+  new OnOffSwitch(4, 3, 4, 3), // LSR ARM
+  new OnOffOnSwitch(5, 6, 5, 6, 7, 3), // MSTR ARM
+  new OnOffSwitch(7, 8, 9, 3),     // PARKING BRK
+  new SwitchingRotary(0, &xAxis, 10, 11, 3, 20),  // HMCS
+  new OnOffSwitch(8, 12, 13, 3)    // A/R DOOR
 };
 
 const int controlCount = sizeof(controls)/sizeof(Control*);
