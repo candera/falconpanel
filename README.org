@@ -1,0 +1,176 @@
+* Falconpanel
+
+An Arduino program for surfacing switches and knobs as a USB game
+controller.
+
+** Show Me
+
+Here's a video demonstrating the features of Falconpanel:
+
+[[https://www.youtube.com/watch?v=VwVLXjgCeJg]]
+
+** Status
+
+Alpha - all code subject to change. May cause tingling in the extremities.
+
+** What's with the name?
+
+I developed this in the process of building a control panel for my
+favorite flight simulator [[http://www.bmsforum.org/forum/content.php][Falcon BMS]]. However, since this surfaces the
+Arduino as a regular USB game controller, there's really no reason
+that it has to be used just with Falcon; it should work with any
+program that's expecting DirectX buttons or axes.
+
+** My Hardware
+
+[[panel-800.jpg]]
+
+The buttons and switches are at the left edge. The thing in the middle
+is a [[http://gaming.logitech.com/en-us/product/g13-advanced-gameboard][Logitech G13]] that I use for the ICP/DED, and has nothing to do
+with Falconpanel, other than sitting on the same stand. The point of
+the picture is to show how I was able to make a pretty simple panel by
+drilling some holes in some 1/4" plywood and mounting various things
+in it. Here's a shot of the back:
+
+[[panel-back-800.jpg]]
+
+The hardware I used:
+
+- An [[http://www.adafruit.com/products/849][Arduino Leonardo]]
+- An [[http://www.adafruit.com/products/192][Adafruit Protoshield]]
+- A [[http://www.adafruit.com/products/64][tiny breadboard]]
+- [[http://www.amazon.com/gp/product/B0094GRZPE/ref%3Doh_aui_detailpage_o01_s00?ie%3DUTF8&psc%3D1][Momentary switches]]
+- [[http://www.amazon.com/gp/product/B008ICKO30/ref%3Doh_aui_detailpage_o05_s00?ie%3DUTF8&psc%3D1][Two-position switches]]
+- [[http://www.amazon.com/gp/product/B008ICEJM2/ref%3Doh_aui_detailpage_o07_s01?ie%3DUTF8&psc%3D1][Three-position switches]]
+- [[http://www.amazon.com/gp/product/B009QFU9H4/ref%3Doh_aui_detailpage_o06_s00?ie%3DUTF8&psc%3D1][10K potentiometer]]
+
+But you can use any Arduino, you don't need the protoshield nor the
+breadboard, and you can use whatever switches, knobs, and buttons you
+like. I used these.
+
+** The software
+
+*** Prerequisities
+
+If you want to compile and build exactly what I did (unlikely), you'll
+need to install the Arduino tools and then - as the key part of all
+this - [[https://github.com/NicoHood/HID][The HID Project libraries]]. NicoHood has done all the hard work
+here, and I will refer you to his documentation for installation.
+
+*** Falconpanel features
+
+The key idea in Falconpanel is that of *Controls*. These map physical
+controls to USB buttons and axes. You will need to map these to your
+particular setup by modifying the code in Falconpanel that looks like
+this:
+
+#+begin_src cpp
+  Control* controls[] =
+  { new PushButton(2, 1),    // FACK
+    new PushButton(3, 2),    // MSTR CTN
+    new OnOffSwitch(4, 3, 4, 3), // LSR ARM
+    new OnOffOnSwitch(5, 6, 5, 6, 7, 3), // MSTR ARM
+    new OnOffSwitch(7, 8, 9, 3),     // PARKING BRK
+    new SwitchingRotary(0, &xAxis, 10, 11, 3, 20),  // HMCS
+    new OnOffSwitch(8, 12, 13, 3)    // A/R DOOR
+  };
+#+end_src
+
+Falconpanel currently supports four different types of control,
+explained below.
+
+**** PushButton
+
+The simplest of the controls, this maps a Arduino input pin directly
+to a DirectX button. Intended to be connect to a momentary, pushbutton
+switch.
+Constructor:
+
+#+begin_src cpp
+PushButton(int pin, int dxButton)
+#+end_src
+
+Watches the digital input pin =pin= and maps it to DirectX button
+=dxButton= (DirectX buttons are numbered from 1, with a max of 32).
+The DirectX button stays pressed for as long as the physical button
+does.
+
+**** OnOffSwitch
+
+Maps a two-position switch to DirectX buttons for its *up* and *down*
+states. The DirectX button presses are momentary, even though the
+switch is not.
+
+Constructor:
+
+#+begin_src cpp
+OnOffSwitch(int pin, int dxButtonUp, int dxButtonDown, int duration)
+#+end_src
+
+Watches the digital input pin =pin=, and when it changes state,
+presses DirectX button =dxButtonUp= or =dxButtonDown= (DirectX buttons
+are numbered from 1, with a max of 32) depending on whether the switch
+has been flipped up or down. The button stays pressed for =duration=
+"ticks", or until the switch state is changed. A tick is currently
+about 150ms.
+
+Note that one switch therefore generates two different DirectX button
+presses.
+
+**** OnOffOnSwitch
+
+Maps a three-position switch to DirectX buttons for its *up*,
+*middle*, and *down* states. The DirectX button presses are momentary,
+even though the switch is not.
+
+Constructor:
+
+#+begin_src cpp
+OnOffOnSwitch(int pinUp, int pinDown, int dxButtonUp, int dxButtonMiddle, int dxButtonDown, int duration)
+#+end_src
+
+Watches the digital input pins =pinUp= and =pinDown=, which should be
+connected to the up and down leads of the physical switch, and when
+the switch changes state, presses DirectX button =dxButtonUp=,
+=dxButtonMiddle=, or =dxButtonDown= (DirectX buttons are numbered from
+1, with a max of 32) depending on which position the switch has been
+flipped to. The button stays pressed for =duration= "ticks", or until
+the switch state is changed. A tick is currently about 150ms.
+
+Note that one switch therefore generates three different DirectX button
+presses.
+
+**** SwitchingRotary
+
+Maps a potentiometer to a DirectX axis and two buttons - one for
+"switching on" and one for "switching off". Note that there is no need
+to use a potentiometer with an actual switch - on/off state is tracked
+by watching whether the pot is below a configurable threshold.
+
+Constructor:
+
+#+begin_src cpp
+SwitchingRotary(int pin, void (*dxAxis)(int val), int dxButtonOn, int dxButtonOff, int duration, int threshold)
+#+end_src
+
+Watches the analog input pin =pin=, which should be connected to the
+middle lead a potentiometer, ideally in the 10K Ohm range. When the
+pot is below =threshold=, reports the specified DirectX axis as being
+at its minimum value. When above =threshold=, reports values scaled
+between the minimum and maximum DirectX axis values.
+
+When the pot passes through the threshold value in the increasing
+direction, sends a momentary press on DirectX button =dxButtonOn=.
+When the pot passes through the threshold value in the decreasing
+direction, sends a momentary press on DirectX button =dxButtonOff=.
+Momentary presses are of duration =duration= ticks, where a tick is
+currently about 150ms.
+
+Note that one pot therefore generates two different DirectX button
+presses and one DirectX axis.
+
+** Feedback
+
+Feel free to drop an issue here on the project or contact me at
+candera@wangdera.com if you have questions or feature requests. Hope
+you find it useful!
