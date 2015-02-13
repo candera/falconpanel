@@ -43,6 +43,7 @@ The hardware I used:
 - [[http://www.amazon.com/gp/product/B008ICKO30/ref%3Doh_aui_detailpage_o05_s00?ie%3DUTF8&psc%3D1][Two-position switches]]
 - [[http://www.amazon.com/gp/product/B008ICEJM2/ref%3Doh_aui_detailpage_o07_s01?ie%3DUTF8&psc%3D1][Three-position switches]]
 - [[http://www.amazon.com/gp/product/B009QFU9H4/ref%3Doh_aui_detailpage_o06_s00?ie%3DUTF8&psc%3D1][10K potentiometer]]
+- [[http://www.ebay.com/itm/251785644683][A 74LS151 3-to-8 multiplexer]]
 
 But you can use any Arduino, you don't need the protoshield nor the
 breadboard, and you can use whatever switches, knobs, and buttons you
@@ -59,25 +60,57 @@ here, and I will refer you to his documentation for installation.
 
 *** Falconpanel features
 
-The key idea in Falconpanel is that of *Controls*. These map physical
-controls to USB buttons and axes. You will need to map these to your
-particular setup by modifying the code in Falconpanel that looks like
-this:
+The key idea in Falconpanel is that of *Components*. These map
+physical controls and other electronics to USB buttons and axes. You
+will need to map these to your particular setup by modifying the code
+in Falconpanel that looks like this:
 
 #+begin_src cpp
-  Control* controls[] =
-  { new PushButton(2, 1),    // FACK
-    new PushButton(3, 2),    // MSTR CTN
-    new OnOffSwitch(4, 3, 4, 3), // LSR ARM
-    new OnOffOnSwitch(5, 6, 5, 6, 7, 3), // MSTR ARM
-    new OnOffSwitch(7, 8, 9, 3),     // PARKING BRK
-    new SwitchingRotary(0, &xAxis, 10, 11, 3, 20),  // HMCS
-    new OnOffSwitch(8, 12, 13, 3)    // A/R DOOR
+  Component* components[] =   {
+    // List the mux here so its setup gets called
+    mux1,
+    // Taxi lights (on mux input 3)
+    new OnOffSwitch(new IC54LS151InputLine(mux1, 3),
+                    new DxButton(1),
+                    new DxButton(2),
+                    3),
+    // FACK
+    new PushButton(new DigitalInputPullupPin(6), new DxButton(3)),
+    // Master Caution
+    new PushButton(new DigitalInputPullupPin(7), new DxButton(4)),
+    // Laser Arm
+    new OnOffSwitch(new DigitalInputPullupPin(8),
+                    new DxButton(5),
+                    new DxButton(6),
+                    3),
+    // Master Arm
+    new OnOffOnSwitch(new DigitalInputPullupPin(9),
+                      new DigitalInputPullupPin(10),
+                      new DxButton(7),
+                      new DxButton(8),
+                      new DxButton(9),
+                      3),
+    // Parking Brake
+    new OnOffSwitch(new DigitalInputPullupPin(11),
+                    new DxButton(10),
+                    new DxButton(11),
+                    3),
+    // HMCS
+    new SwitchingRotary(new AnalogInputPin(0),
+                        DxAxis::XRotation(),
+                        new DxButton(12),
+                        new DxButton(13),
+                        3,
+                        0.05),
+    // A/R Door
+    new OnOffSwitch(new DigitalInputPullupPin(12),
+                    new DxButton(14),
+                    new DxButton(15),
+                    3)
   };
 #+end_src
 
-Falconpanel currently supports four different types of control,
-explained below.
+Falconpanel currently supports the following types of component
 
 **** PushButton
 
@@ -87,10 +120,10 @@ switch.
 Constructor:
 
 #+begin_src cpp
-PushButton(int pin, int dxButton)
+PushButton(DigitalInput* in, DxButton* dxButton)
 #+end_src
 
-Watches the digital input pin =pin= and maps it to DirectX button
+Watches the digital input =in= and maps it to DirectX button
 =dxButton= (DirectX buttons are numbered from 1, with a max of 32).
 The DirectX button stays pressed for as long as the physical button
 does.
@@ -104,10 +137,10 @@ switch is not.
 Constructor:
 
 #+begin_src cpp
-OnOffSwitch(int pin, int dxButtonUp, int dxButtonDown, int duration)
+OnOffSwitch(DigitalInput* in, DxButton* dxButtonUp, DxButton* dxButtonDown, int duration)
 #+end_src
 
-Watches the digital input pin =pin=, and when it changes state,
+Watches the digital input =in=, and when it changes state,
 presses DirectX button =dxButtonUp= or =dxButtonDown= (DirectX buttons
 are numbered from 1, with a max of 32) depending on whether the switch
 has been flipped up or down. The button stays pressed for =duration=
@@ -126,10 +159,12 @@ even though the switch is not.
 Constructor:
 
 #+begin_src cpp
-OnOffOnSwitch(int pinUp, int pinDown, int dxButtonUp, int dxButtonMiddle, int dxButtonDown, int duration)
+  OnOffOnSwitch(DigitalInput* inUp, DigitalInput* inDown,
+                DxButton* dxButtonUp, DxButton* dxButtonMiddle, DxButton* dxButtonDown,
+                int duration)
 #+end_src
 
-Watches the digital input pins =pinUp= and =pinDown=, which should be
+Watches the digital inputs =inUp= and =inDown=, which should be
 connected to the up and down leads of the physical switch, and when
 the switch changes state, presses DirectX button =dxButtonUp=,
 =dxButtonMiddle=, or =dxButtonDown= (DirectX buttons are numbered from
@@ -150,14 +185,16 @@ by watching whether the pot is below a configurable threshold.
 Constructor:
 
 #+begin_src cpp
-SwitchingRotary(int pin, void (*dxAxis)(int val), int dxButtonOn, int dxButtonOff, int duration, int threshold)
+  SwitchingRotary(AnalogInput* in,
+                  DxAxis* dxAxis, DxButton* dxButtonOn, DxButton* dxButtonOff,
+                  int duration, float threshold)
 #+end_src
 
-Watches the analog input pin =pin=, which should be connected to the
-middle lead a potentiometer, ideally in the 10K Ohm range. When the
-pot is below =threshold=, reports the specified DirectX axis as being
-at its minimum value. When above =threshold=, reports values scaled
-between the minimum and maximum DirectX axis values.
+Watches the analog input =in=, which should be connected to the middle
+lead of a potentiometer, ideally in the 10K Ohm range. When the pot is
+below =threshold=, reports the specified DirectX axis as being at its
+minimum value. When above =threshold=, reports values scaled between
+the minimum and maximum DirectX axis values.
 
 When the pot passes through the threshold value in the increasing
 direction, sends a momentary press on DirectX button =dxButtonOn=.
@@ -168,6 +205,56 @@ currently about 150ms.
 
 Note that one pot therefore generates two different DirectX button
 presses and one DirectX axis.
+
+**** IC74LS151
+
+Represents a 74LS151 3-to-8 mulitplexer (mux). These can be used to
+multiplex three input pins and one output pin on the Arduino to 8
+input pins on the mux, effectively doubling the number of input wires
+you can have connected to a single Arduino.
+
+=IC74LS151= is a component mainly so it can be listed in the
+components array and have its setup function called; the primary use
+of it is via its =input= method, which is an adapter that bridges from
+an IC54LS151 mux instance to anything that's expecting a digital
+input, like the =PushButton= class.
+
+Constructor:
+
+#+begin_src cpp
+IC74LS151(DigitalOutput* dout0, DigitalOutput* dout1, DigitalOutput* dout2, DigitalInput* din)
+#+end_src
+
+Sets up a 74LS151 multiplexer with its address lines driven by =dout0=
+(LSB), =dout1=, and =dout2= (MSB). Input will arrive on =din=. Use the
+=input= method to connect the input pins of the mux to other controls,
+as in this example:
+
+#+begin_src cpp
+  // I've got a 74LS151 3-to-8 mux with its address pins connected to
+  // Arduino pins 2-4, and with its output pin connected to Arduino pin
+  // 5. We have to declare this outside the components array below
+  // because we reference it in there.
+  IC74LS151* mux1 = new IC74LS151(new DigitalOutputPin(2),
+                                  new DigitalOutputPin(3),
+                                  new DigitalOutputPin(4),
+                                  new DigitalInputPullupPin(5));
+
+  // A simple example with only one control connect to the mux.
+  // Ordinarily you would connect several, since saving Arduino pins is
+  // the point of the mux.
+  Component* components[] =  {
+    // List the mux here so its setup gets called
+    mux1,
+    // Connect an On/Off switch to the mux input 3 (D3 on the data sheet)
+    new OnOffSwitch(mux1->input(3),
+                    new DxButton(1),
+                    new DxButton(2),
+                    3)
+  };
+#+end_src
+
+To learn more about the mux, read the [[http://pdf.datasheetcatalog.com/datasheet2/2/05zhla9si2dxjf61z5qx4spz7uyy.pdf][datasheet]].
 
 ** Feedback
 
