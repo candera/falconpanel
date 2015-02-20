@@ -50,7 +50,6 @@ breadboard, and you can use whatever switches, knobs, and buttons you
 like. I used these.
 
 ** The software
-
 *** Prerequisities
 
 If you want to compile and build exactly what I did (unlikely), you'll
@@ -66,47 +65,40 @@ will need to map these to your particular setup by modifying the code
 in Falconpanel that looks like this:
 
 #+begin_src cpp
+  // I've got a 74LS151 3-to-8 mux with its address pins connected to
+  // Arduino pins 2-4, and with its output pin connected to Arduino pin
+  // 5. We have to declare this outside the components array below
+  // because we reference it in there.
+  IC74LS151* mux1 = new IC74LS151(new DigitalOutputPin(2),
+                                  new DigitalOutputPin(3),
+                                  new DigitalOutputPin(4),
+                                  new DigitalInputPullupPin(5));
+
+  // Keep track of the button number so I don't have to keep looking at
+  // what I used.
+  int dxButton = 1;
+
   Component* components[] =   {
     // List the mux here so its setup gets called
     mux1,
-    // Taxi lights (on mux input 3)
-    new OnOffSwitch(new IC54LS151InputLine(mux1, 3),
-                    new DxButton(1),
-                    new DxButton(2),
-                    3),
     // FACK
-    new PushButton(new DigitalInputPullupPin(6), new DxButton(3)),
-    // Master Caution
-    new PushButton(new DigitalInputPullupPin(7), new DxButton(4)),
+    new PushButton(mux1->input(0), new DxButton(dxButton++)),
     // Laser Arm
-    new OnOffSwitch(new DigitalInputPullupPin(8),
-                    new DxButton(5),
-                    new DxButton(6),
-                    3),
+    new OnOffSwitch(mux1->input(2),
+                    new MomentaryButton(new DxButton(dxButton++)),
+                    new MomentaryButton(new DxButton(dxButton++))),
     // Master Arm
-    new OnOffOnSwitch(new DigitalInputPullupPin(9),
-                      new DigitalInputPullupPin(10),
-                      new DxButton(7),
-                      new DxButton(8),
-                      new DxButton(9),
-                      3),
-    // Parking Brake
-    new OnOffSwitch(new DigitalInputPullupPin(11),
-                    new DxButton(10),
-                    new DxButton(11),
-                    3),
+    new OnOffOnSwitch(mux1->input(3),
+                      mux1->input(4),
+                      new MomentaryButton(new DxButton(dxButton++)),
+                      new MomentaryButton(new DxButton(dxButton++)),
+                      new MomentaryButton(new DxButton(dxButton++))),
     // HMCS
     new SwitchingRotary(new AnalogInputPin(0),
                         DxAxis::XRotation(),
-                        new DxButton(12),
-                        new DxButton(13),
-                        3,
-                        0.05),
-    // A/R Door
-    new OnOffSwitch(new DigitalInputPullupPin(12),
-                    new DxButton(14),
-                    new DxButton(15),
-                    3)
+                        new MomentaryButton(new DxButton(dxButton++)),
+                        new MomentaryButton(new DxButton(dxButton++)),
+                        0.05)
   };
 #+end_src
 
@@ -255,6 +247,23 @@ as in this example:
 #+end_src
 
 To learn more about the mux, read the [[http://pdf.datasheetcatalog.com/datasheet2/2/05zhla9si2dxjf61z5qx4spz7uyy.pdf][datasheet]].
+
+
+Each of these components can be hooked up to either *Buttons*, *Axes*
+or both, depending on the component. Currently, an axis is always a
+direct connect to a DirectX axis. Axis values are represented as
+floating point numbers in the range 0.0 to 1.0, inclusive.
+
+Buttons outputs of components, however, can either be a direct connect
+to a DirectX button on the virtual gamepad, or can go through a
+=MomentaryButton= adapter. =MomentaryButton= turns a button press into
+a press-and-release, where the release happens automatically a
+configurable number of *ticks* later. A tick is currently about 150ms,
+and the default delay is three ticks. This approach is useful in
+having the button presses coming out of a component like an
+=OnOffSwitch= indicate changes in state rather than switch position.
+This can help with mapping in a game, where holding buttons down may
+cause problems.
 
 ** Feedback
 
