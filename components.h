@@ -441,6 +441,9 @@ class PulseRotary : public Component {
   Button* _buttonUp;
   Button* _buttonDown;
   float _stepSize;
+  int _pendingUp;
+  int _pendingDown;
+  int _phase; // 0 = done, 1 = pressing, 2 = releasing
 
  public:
   PulseRotary(AnalogInput* in,
@@ -453,6 +456,9 @@ class PulseRotary : public Component {
     _last = 0;
     _stepSize = 1.0 / divisions;
     updateThresholds();
+
+    _pendingUp = 0;
+    _pendingDown = 0;
   }
 
   virtual void setup() {
@@ -552,18 +558,46 @@ class PulseRotary : public Component {
 
     if (between(val, _nextDownLow1, _nextDownHigh1) ||
         between(val, _nextDownLow2, _nextDownHigh2)) {
+      _pendingUp = 0;
+      _pendingDown++;
       _buttonUp->release();
-      _buttonDown->press();
       _last = val;
       updateThresholds();
     }
     else if (between(val, _nextUpLow1, _nextUpHigh1) ||
              between(val, _nextUpLow2, _nextUpHigh2)) {
+      _pendingUp++;
+      _pendingDown = 0;
       _buttonDown->release();
-      _buttonUp->press();
       _last = val;
       updateThresholds();
     }
+  }
+
+  if (_pendingUp > 0) {
+    if (_pressed) {
+      _buttonUp->release();
+      _pressed = false;
+      _pendingUp--;
+    }
+    else {
+      _buttonUp->press();
+      _pressed = true;
+    }
+  }
+  else if (_pendingDown > 0) {
+    if (_pressed) {
+      _buttonDown->release();
+      _pressed = false;
+      _pendingDown--;
+    }
+    else {
+      _buttonDown->press();
+      _pressed = true;
+    }
+  }
+  else {
+    _pressed = false;
   }
 };
 

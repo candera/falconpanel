@@ -224,11 +224,9 @@ direction.
 
 The up or down button is pressed each time the threshold is crossed in
 that direction, at which time the opposite button is released. It
-therefore probably only makes sense to use this with buttons wrapped
-in a =MomentaryButton=, as otherwise consecutive movements in a
-particular direction would not result in cycles of press-release, but
-rather only in a single press in the direction of travel and a single
-release in the opposite direction.
+maintains its own internal buffer of contiguous presses in one
+direction, so it probably does not make sense to use this with buttons
+wrapped in a =MomentaryButton=.
 
 **** IC74LS151
 
