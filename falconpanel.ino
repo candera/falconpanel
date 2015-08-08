@@ -29,36 +29,32 @@ int dxButton = 1;
 Component* components[] =   {
   // List the mux here so its setup gets called
   mux1,
-  // FACK
-  new PushButton(mux1->input(0), new DxButton(dxButton++)),
-  // Master Caution
-  new PushButton(mux1->input(1), new DxButton(dxButton++)),
+  // Master Arm
+  new OnOffOnSwitch(mux1->input(0),
+                    mux1->input(1),
+                    new MomentaryButton(new DxButton(dxButton++)),
+                    new MomentaryButton(new DxButton(dxButton++)),
+                    new MomentaryButton(new DxButton(dxButton++))),
   // Laser Arm
   new OnOffSwitch(mux1->input(2),
                   new MomentaryButton(new DxButton(dxButton++)),
                   new MomentaryButton(new DxButton(dxButton++))),
-  // Master Arm
-  new OnOffOnSwitch(mux1->input(3),
-                    mux1->input(4),
-                    new MomentaryButton(new DxButton(dxButton++)),
-                    new MomentaryButton(new DxButton(dxButton++)),
-                    new MomentaryButton(new DxButton(dxButton++))),
   // Emergency Stores Jettison
-  new PushButton(mux1->input(5), new DxButton(dxButton++)),
+  new PushButton(mux1->input(3), new DxButton(dxButton++)),
   // Parking Brake
   new OnOffSwitch(new DigitalInputPullupPin(6),
                   new MomentaryButton(new DxButton(dxButton++)),
                   new MomentaryButton(new DxButton(dxButton++))),
-  // Landing Gear
-  new OnOffSwitch(mux1->input(6),
+  // Stores config
+  new OnOffSwitch(new DigitalInputPullupPin(7),
                   new MomentaryButton(new DxButton(dxButton++)),
                   new MomentaryButton(new DxButton(dxButton++))),
   // Taxi Lights
-  new OnOffSwitch(mux1->input(7),
+  new OnOffSwitch(mux1->input(4),
                   new MomentaryButton(new DxButton(dxButton++)),
                   new MomentaryButton(new DxButton(dxButton++))),
-  // Stores config
-  new OnOffSwitch(new DigitalInputPullupPin(7),
+  // Landing Gear
+  new OnOffSwitch(mux1->input(5),
                   new MomentaryButton(new DxButton(dxButton++)),
                   new MomentaryButton(new DxButton(dxButton++))),
   // HMCS
@@ -67,28 +63,33 @@ Component* components[] =   {
                       new MomentaryButton(new DxButton(dxButton++)),
                       new MomentaryButton(new DxButton(dxButton++)),
                       0.05),
-  // RWR
+  // Chaff
   new OnOffSwitch(new DigitalInputPullupPin(8),
                   new MomentaryButton(new DxButton(dxButton++)),
                   new MomentaryButton(new DxButton(dxButton++))),
-  // Chaff
+  // Flares
   new OnOffSwitch(new DigitalInputPullupPin(9),
                   new MomentaryButton(new DxButton(dxButton++)),
                   new MomentaryButton(new DxButton(dxButton++))),
-  // Flares
+  // Altimeter
+  new PulseRotary(new AnalogInputPin(1),
+                  new MomentaryButton(new DxButton(dxButton++), 1),
+                  new MomentaryButton(new DxButton(dxButton++), 1),
+                  16),
+  // A/R Door
   new OnOffSwitch(new DigitalInputPullupPin(10),
                   new MomentaryButton(new DxButton(dxButton++)),
                   new MomentaryButton(new DxButton(dxButton++))),
-  // Jammer
+  // Master Lights
   new OnOffSwitch(new DigitalInputPullupPin(11),
                   new MomentaryButton(new DxButton(dxButton++)),
                   new MomentaryButton(new DxButton(dxButton++))),
-  // A/R Door
-  new OnOffSwitch(new DigitalInputPullupPin(12),
-                  new MomentaryButton(new DxButton(dxButton++)),
-                  new MomentaryButton(new DxButton(dxButton++))),
-  // RWR Power
-  new PushButton(new DigitalInputPullupPin(13), new DxButton(dxButton++))
+  // AVCD
+  new OnOffOnSwitch(mux1->input(6),
+                    mux1->input(7),
+                    new MomentaryButton(new DxButton(dxButton++)),
+                    new MomentaryButton(new DxButton(dxButton++)),
+                    new MomentaryButton(new DxButton(dxButton++)))
 };
 
 const int componentCount = sizeof(components)/sizeof(Component*);
