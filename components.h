@@ -467,7 +467,7 @@ class PulseRotary : public Component {
     float opposite = _last + 0.5;
 
     if (opposite >= 1.0) {
-      opposite -= 0.5;
+      opposite -= 1.0;
     }
 
     // _last just above zero
@@ -495,7 +495,7 @@ class PulseRotary : public Component {
       _nextDownHigh2 = -1.0;
     }
     // _last just before middle
-    else if (between(_last, 0.5 - stepSize, 0.5)) {
+    else if (between(_last, 0.5 - _stepSize, 0.5)) {
       _nextUpLow1 = _last + _stepSize;
       _nextUpHigh1 = opposite;
       _nextUpLow2 = -1.0;
