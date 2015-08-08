@@ -198,6 +198,38 @@ currently about 150ms.
 Note that one pot therefore generates two different DirectX button
 presses and one DirectX axis.
 
+**** PulseRotary
+Maps a potentiometer to two buttons - one for motion in the direction
+of increasing input values (the "up" direction), and one for motion in
+the opposite direction (the "down" direction).
+
+Constructor:
+
+#+begin_src cpp
+  PulseRotary(AnalogInput* in, DxButton* dxButtonUp, DxButton* dxButtonDown, int divisions);
+#+end_src
+
+Watches the analog input =in=, which should be connected to the middle
+lead of a potentiometer, ideally in the 10K Ohm range. When the pot
+moves more than 1/divisions of its range, the up or down button is
+triggered, depending on the direction of motion. The position the pot
+is in when this threshold is crossed is the new "home" position for
+determining the next transition, so =divisions= does not result in a
+strict division of the pot range.
+
+This control does take into account the possibility of the pot
+"wrapping around", as can happen with a pot that was made or modified
+to have full 360 degree rotation, and will correctly calculate the
+direction.
+
+The up or down button is pressed each time the threshold is crossed in
+that direction, at which time the opposite button is released. It
+therefore probably only makes sense to use this with buttons wrapped
+in a =MomentaryButton=, as otherwise consecutive movements in a
+particular direction would not result in cycles of press-release, but
+rather only in a single press in the direction of travel and a single
+release in the opposite direction.
+
 **** IC74LS151
 
 Represents a 74LS151 3-to-8 mulitplexer (mux). These can be used to

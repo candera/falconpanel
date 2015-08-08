@@ -423,6 +423,123 @@ class SwitchingRotary : public Component {
   }
 };
 
+/* Adapts a 360-degree potentiometer into two DX buttons that will
+ * fire as the knob is turned (one will pulse when turned clockwise,
+ * one for counterclockwise) */
+class PulseRotary : public Component {
+ private:
+  float _last;
+  float _nextUpLow1;
+  float _nextUpHigh1;
+  float _nextDownLow1;
+  float _nextDownHigh1;
+  float _nextUpLow2;
+  float _nextUpHigh2;
+  float _nextDownLow2;
+  float _nextDownHigh2;
+  AnalogInput* _in;
+  Button* _buttonUp;
+  Button* _buttonDown;
+  float _stepSize;
+
+ public:
+  PulseRotary(AnalogInput* in,
+              Button* buttonUp,
+              Button* buttonDown,
+              int divisions) {
+    _in = in;
+    _buttonUp = buttonUp;
+    _buttonDown = buttonDown;
+    _divisions = divisions;
+    _last = 0;
+    _stepSize = 1.0 / _divisions;
+    updateThresholds();
+  }
+
+  virtual void setup() {
+    _in->setup();
+  }
+
+  void updateThresholds() {
+    float opposite = _last + 0.5;
+
+    if (opposite >= 1.0) {
+      opposite -= 0.5;
+    }
+
+    // Case 3
+    if (_last < _stepSize) {
+      _nextUpLow1 = _last + _stepSize;
+      _nextUpHigh1 = opposite;
+      _nextUpLow2 = -1.0;
+      _nextUpHigh2 = -1.0;
+
+      _nextDownLow1 = opposite;
+      _nextDownHigh1 = _last - _stepSize + 1.0;
+      _nextDownLow2 = -1.0;
+      _nextDownHigh2 = -1.0;
+    }
+    // Case 4
+    else if (_last > (1.0 - _stepSize)) {
+      _nextUpLow1 = _last + _stepSize - 1.0;
+      _nextUpHigh1 = opposite;
+      _nextUpLow2 = -1.0;
+      _nextUpHigh2 = -1.0;
+
+      _nextDownLow1 = opposite;
+      _nextDownHigh1 = _last - _stepSize;
+      _nextDownLow2 = -1.0;
+      _nextDownHigh2 = -1.0;
+    }
+    // Case 1
+    else if (_last < 0.5) {
+      _nextUpLow1 = _last + _stepSize;
+      _nextUpHigh1 = opposite;
+      _nextUpLow2 = -1.0;
+      _nextUpHigh2 = -1.0;
+
+      _nextDownLow1 = 0;
+      _nextDownHigh1 = _last - _stepSize;
+      _nextDownLow2 = opposite;
+      _nextDownHigh2 = 1.0;
+    }
+    // Case 2
+    else {
+      _nextUpLow1 = _last + _stepSize;
+      _nextUpHigh1 = 1.0;
+      _nextUpLow2 = 0.0;
+      _nextUpHigh2 = opposite;
+
+      _nextDownLow1 = opposite;
+      _nextDownHigh1 = _last - _stepSize;
+      _nextDownLow2 = -1.0;
+      _nextDownHigh2 = -1.0;
+    }
+  }  
+  
+  virtual void update() {
+    _buttonUp->update();
+    _buttonDown->update();
+
+    float val = _in->read();
+
+    if (((val >= _nextDownLow1) && (val =< _nextDownHigh1)) ||
+        ((val >= _nextDownLow2) && (val =< _nextDownHigh2))) {
+      _buttonUp->release();
+      _buttonDown->press();
+      _last = val;
+      updateThresholds();
+    }
+    else if (((val >= _nextUpLow1) && (val =< _nextUpHigh1)) ||
+             ((val >= _nextUpLow2) && (val =< _nextUpHigh2))) {
+      _buttonDown->release();
+      _buttonUp->press();
+      _last = val;
+      updateThresholds();
+    }
+  }
+};
+
 /* Support for the 74LS151 3-to-8 mux */
 class IC74LS151 : public Component {
  private:
