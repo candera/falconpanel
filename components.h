@@ -504,7 +504,7 @@ class PulseRotary : public Component {
       _nextDownHigh2 = 1.0;
     }
     // _last just after middle
-    else if ((_last <= (0.5 + _stepSize))
+    else if ((_last <= (0.5 + _stepSize)) &&
              (_last >= 0.5)) {
       _nextUpLow1 = _last + _stepSize;
       _nextUpHigh1 = 1.0;
