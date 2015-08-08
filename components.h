@@ -466,8 +466,8 @@ class PulseRotary : public Component {
       opposite -= 0.5;
     }
 
-    // Case 3
-    if (_last < _stepSize) {
+    // _last just above zero
+    if (_last <= _stepSize) {
       _nextUpLow1 = _last + _stepSize;
       _nextUpHigh1 = opposite;
       _nextUpLow2 = -1.0;
@@ -478,8 +478,8 @@ class PulseRotary : public Component {
       _nextDownLow2 = -1.0;
       _nextDownHigh2 = -1.0;
     }
-    // Case 4
-    else if (_last > (1.0 - _stepSize)) {
+    // _last just below one
+    else if (_last >= (1.0 - _stepSize)) {
       _nextUpLow1 = _last + _stepSize - 1.0;
       _nextUpHigh1 = opposite;
       _nextUpLow2 = -1.0;
@@ -490,8 +490,34 @@ class PulseRotary : public Component {
       _nextDownLow2 = -1.0;
       _nextDownHigh2 = -1.0;
     }
-    // Case 1
-    else if (_last < 0.5) {
+    // _last just before middle
+    else if ((_last >= (0.5 - _stepSize)) &&
+             (_last <= 0.5)) {
+      _nextUpLow1 = _last + _stepSize;
+      _nextUpHigh1 = opposite;
+      _nextUpLow2 = -1.0;
+      _nextUpHigh2 = -1.0;
+
+      _nextDownLow1 = 0.0;
+      _nextDownHigh1 = _last - _stepSize;
+      _nextDownLow2 = opposite;
+      _nextDownHigh2 = 1.0;
+    }
+    // _last just after middle
+    else if ((_last <= (0.5 + _stepSize))
+             (_last >= 0.5)) {
+      _nextUpLow1 = _last + _stepSize;
+      _nextUpHigh1 = 1.0;
+      _nextUpLow2 = 0.0;
+      _nextUpHigh2 = opposite;
+
+      _nextDownLow1 = opposite;
+      _nextDownHigh1 = _last - _stepSize;
+      _nextDownLow2 = -1.0;
+      _nextDownHigh2 = -1.0;
+    }
+    // _last in first half
+    else if (_last <= 0.5) {
       _nextUpLow1 = _last + _stepSize;
       _nextUpHigh1 = opposite;
       _nextUpLow2 = -1.0;
@@ -502,7 +528,7 @@ class PulseRotary : public Component {
       _nextDownLow2 = opposite;
       _nextDownHigh2 = 1.0;
     }
-    // Case 2
+    // _last in second half
     else {
       _nextUpLow1 = _last + _stepSize;
       _nextUpHigh1 = 1.0;
