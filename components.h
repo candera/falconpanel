@@ -450,9 +450,8 @@ class PulseRotary : public Component {
     _in = in;
     _buttonUp = buttonUp;
     _buttonDown = buttonDown;
-    _divisions = divisions;
     _last = 0;
-    _stepSize = 1.0 / _divisions;
+    _stepSize = 1.0 / divisions;
     updateThresholds();
   }
 
@@ -523,15 +522,15 @@ class PulseRotary : public Component {
 
     float val = _in->read();
 
-    if (((val >= _nextDownLow1) && (val =< _nextDownHigh1)) ||
-        ((val >= _nextDownLow2) && (val =< _nextDownHigh2))) {
+    if (((val >= _nextDownLow1) && (val <= _nextDownHigh1)) ||
+        ((val >= _nextDownLow2) && (val <= _nextDownHigh2))) {
       _buttonUp->release();
       _buttonDown->press();
       _last = val;
       updateThresholds();
     }
-    else if (((val >= _nextUpLow1) && (val =< _nextUpHigh1)) ||
-             ((val >= _nextUpLow2) && (val =< _nextUpHigh2))) {
+    else if (((val >= _nextUpLow1) && (val <= _nextUpHigh1)) ||
+             ((val >= _nextUpLow2) && (val <= _nextUpHigh2))) {
       _buttonDown->release();
       _buttonUp->press();
       _last = val;
