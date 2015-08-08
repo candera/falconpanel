@@ -459,6 +459,10 @@ class PulseRotary : public Component {
     _in->setup();
   }
 
+  bool between(float val, float low, float high) {
+    return (val >= low) && (val <= high);
+  }
+
   void updateThresholds() {
     float opposite = _last + 0.5;
 
@@ -467,7 +471,7 @@ class PulseRotary : public Component {
     }
 
     // _last just above zero
-    if (_last <= _stepSize) {
+    if (between(_last, 0, _stepSize)) {
       _nextUpLow1 = _last + _stepSize;
       _nextUpHigh1 = opposite;
       _nextUpLow2 = -1.0;
@@ -479,7 +483,7 @@ class PulseRotary : public Component {
       _nextDownHigh2 = -1.0;
     }
     // _last just below one
-    else if (_last >= (1.0 - _stepSize)) {
+    else if (between(_last, 1.0 - _stepSize, 1.0)) {
       _nextUpLow1 = _last + _stepSize - 1.0;
       _nextUpHigh1 = opposite;
       _nextUpLow2 = -1.0;
@@ -491,8 +495,7 @@ class PulseRotary : public Component {
       _nextDownHigh2 = -1.0;
     }
     // _last just before middle
-    else if ((_last >= (0.5 - _stepSize)) &&
-             (_last <= 0.5)) {
+    else if (between(_last, 0.5 - stepSize, 0.5)) {
       _nextUpLow1 = _last + _stepSize;
       _nextUpHigh1 = opposite;
       _nextUpLow2 = -1.0;
@@ -504,8 +507,7 @@ class PulseRotary : public Component {
       _nextDownHigh2 = 1.0;
     }
     // _last just after middle
-    else if ((_last <= (0.5 + _stepSize)) &&
-             (_last >= 0.5)) {
+    else if (between(_last, 0.5, 0.5 + _stepSize)) {
       _nextUpLow1 = _last + _stepSize;
       _nextUpHigh1 = 1.0;
       _nextUpLow2 = 0.0;
@@ -517,7 +519,7 @@ class PulseRotary : public Component {
       _nextDownHigh2 = -1.0;
     }
     // _last in first half
-    else if (_last <= 0.5) {
+    else if (between(_last, _stepSize, 0.5)) {
       _nextUpLow1 = _last + _stepSize;
       _nextUpHigh1 = opposite;
       _nextUpLow2 = -1.0;
@@ -540,23 +542,23 @@ class PulseRotary : public Component {
       _nextDownLow2 = -1.0;
       _nextDownHigh2 = -1.0;
     }
-  }  
-  
+  }
+
   virtual void update() {
     _buttonUp->update();
     _buttonDown->update();
 
     float val = _in->read();
 
-    if (((val >= _nextDownLow1) && (val <= _nextDownHigh1)) ||
-        ((val >= _nextDownLow2) && (val <= _nextDownHigh2))) {
+    if (between(val, _nextDownLow1, _nextDownHigh1) ||
+        between(val, _nextDownLow2, _nextDownHigh2)) {
       _buttonUp->release();
       _buttonDown->press();
       _last = val;
       updateThresholds();
     }
-    else if (((val >= _nextUpLow1) && (val <= _nextUpHigh1)) ||
-             ((val >= _nextUpLow2) && (val <= _nextUpHigh2))) {
+    else if (between(val, _nextUpLow1, _nextUpHigh1) ||
+             between(val, _nextUpLow2, _nextUpHigh2)) {
       _buttonDown->release();
       _buttonUp->press();
       _last = val;
