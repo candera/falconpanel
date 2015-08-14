@@ -89,7 +89,14 @@ Component* components[] =   {
                     mux1->input(7),
                     new MomentaryButton(new DxButton(dxButton++)),
                     new MomentaryButton(new DxButton(dxButton++)),
-                    new MomentaryButton(new DxButton(dxButton++)))
+                    new MomentaryButton(new DxButton(dxButton++))),
+                    
+  // Altimeter adjustment
+  new RotaryEncoder(new DigitalInputPullupPin(12),
+                    new DigitalInputPullupPin(13),
+                    new DxButton(dxButton++),
+                    new DxButton(dxButton++),
+                    4)
 };
 
 const int componentCount = sizeof(components)/sizeof(Component*);

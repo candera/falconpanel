@@ -624,7 +624,7 @@ class RotaryEncoder : public Component {
   int _queueLimit;
 
  public:
-  RotaryEncoder(DigitalInput* in1, DigitalInput in2,
+  RotaryEncoder(DigitalInput* in1, DigitalInput* in2,
                 Button* buttonForward, Button* buttonBackward,
                 int queueLimit = 2) {
     _in1 = in1;
