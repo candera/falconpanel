@@ -118,7 +118,7 @@ void loop() {
   Gamepad.write();
 
   // simple debounce
-  delay(150);
+  delay(75);
 }
 
 /*
