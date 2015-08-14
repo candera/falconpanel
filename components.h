@@ -619,8 +619,8 @@ class RotaryEncoder : public Component {
   bool _pressed;
   bool _last1;
   bool _last2;
-  Edge _lastEvent1; // 0 = no event, 1 = rose, 2 = fell
-  Edge _lastEvent2; // 0 = no event, 1 = rose, 2 = fell
+  int _lastEvent;
+  int _penultimateEvent;
   int _queueLimit;
 
  public:
@@ -636,8 +636,8 @@ class RotaryEncoder : public Component {
     _pressed = false;
     _last1 = false;
     _last2 = false;
-    _lastEvent1 = None;
-    _lastEvent2 = None;
+    _lastEvent = 0;
+    _penultimateEvent = 0;
     _queueLimit = queueLimit;
   }
 
@@ -650,41 +650,41 @@ class RotaryEncoder : public Component {
     bool val1 = _in1->read();
     bool val2 = _in2->read();
 
-    Edge event1 = None;
     if (val1 && !_last1) {
-      event1 = Rising;
+      _penultimateEvent = _lastEvent;
+      _lastEvent = 1;
     }
     else if (!val1 && _last1) {
-      event1 = Falling;
+      _penultimateEvent = _lastEvent;
+      _lastEvent = -1;
     }
 
-    Edge event2 = None;
     if (val2 && !_last2) {
-      event2 = Rising;
+      _penultimateEvent = _lastEvent;
+      _lastEvent = 2;
     }
     else if (!val2 && _last2) {
-      event2 = Falling;
+      _penultimateEvent = _lastEvent;
+      _lastEvent = -2;
     }
 
-    if (_lastEvent1 == Falling && event2 == Falling) {
+    if (_lastEvent == -2 && _penultimateEvent == -1) {
       if (_pendingForward < _queueLimit) {
         _pendingForward++;
       }
-      event1 = None;
-      event2 = None;
+      _lastEvent = 0;
+      _penultimateEvent = 0;
     }
-    else if (_lastEvent2 == Falling && event1 == Falling) {
+    else if (_lastEvent == -1 && _penultimateEvent == -2) {
       if (_pendingBackward < _queueLimit) {
         _pendingBackward++;
       }
-      event1 = None;
-      event2 = None;
+      _lastEvent = 0;
+      _penultimateEvent = 0;
     }
 
     _last1 = val1;
     _last2 = val2;
-    _lastEvent1 = event1;
-    _lastEvent2 = event2;
       
     if (_pendingForward > 0) {
       if (_pressed) {
