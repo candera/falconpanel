@@ -601,6 +601,118 @@ class PulseRotary : public Component {
   }
 };
 
+enum Edge : byte {
+  None, Rising, Falling
+};
+
+/* Adapts a rotary encoder into two DirectX buttons - one for each
+ * direction of rotation */
+class RotaryEncoder : public Component {
+ private:
+  DigitalInput* _in1;
+  DigitalInput* _in2;
+  Button* _buttonForward;
+  Button* _buttonBackward;
+  int _pendingForward;
+  int _pendingBackward;
+  bool _pressed;
+  bool _last1;
+  bool _last2;
+  Edge _lastEvent1; // 0 = no event, 1 = rose, 2 = fell
+  Edge _lastEvent2; // 0 = no event, 1 = rose, 2 = fell
+  int _queueLimit;
+
+ public:
+  RotaryEncoder(DigitalInput* in1, DigitalInput in2,
+                Button* buttonForward, Button* buttonBackward,
+                int queueLimit = 2) {
+    _in1 = in1;
+    _in2 = in2;
+    _buttonForward = buttonForward;
+    _buttonBackward = buttonBackward;
+    _pendingForward = 0;
+    _pendingBackward = 0;
+    _pressed = false;
+    _last1 = false;
+    _last2 = false;
+    _lastEvent1 = None;
+    _lastEvent2 = None;
+    _queueLimit = queueLimit;
+  }
+
+  virtual void setup() {
+    _in1->setup();
+    _in2->setup();
+  }
+
+  virtual void update() {
+    bool val1 = _in1->read();
+    bool val2 = _in2->read();
+
+    Edge event1 = None;
+    if (val1 && !_last1) {
+      event1 = Rising;
+    }
+    else if (!val1 && _last1) {
+      event1 = Falling;
+    }
+
+    Edge event2 = None;
+    if (val2 && !_last2) {
+      event2 = Rising;
+    }
+    else if (!val2 && _last2) {
+      event2 = Falling;
+    }
+
+    if (_lastEvent1 == Falling && event2 == Falling) {
+      if (_pendingForward < _queueLimit) {
+        _pendingForward++;
+      }
+      event1 = None;
+      event2 = None;
+    }
+    else if (_lastEvent2 == Falling && event1 == Falling) {
+      if (_pendingBackward < _queueLimit) {
+        _pendingBackward++;
+      }
+      event1 = None;
+      event2 = None;
+    }
+
+    _last1 = val1;
+    _last2 = val2;
+    _lastEvent1 = event1;
+    _lastEvent2 = event2;
+      
+    if (_pendingForward > 0) {
+      if (_pressed) {
+        _buttonForward->release();
+        _pressed = false;
+        _pendingForward--;
+      }
+      else {
+        _buttonForward->press();
+        _pressed = true;
+      }
+    }
+    else if (_pendingBackward > 0) {
+      if (_pressed) {
+        _buttonBackward->release();
+        _pressed = false;
+        _pendingBackward--;
+      }
+      else {
+        _buttonBackward->press();
+        _pressed = true;
+      }
+    }
+    else {
+      _pressed = false;
+    }
+  }
+};
+
 /* Support for the 74LS151 3-to-8 mux */
 class IC74LS151 : public Component {
  private:

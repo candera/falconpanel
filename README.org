@@ -199,6 +199,9 @@ Note that one pot therefore generates two different DirectX button
 presses and one DirectX axis.
 
 **** PulseRotary
+*DEPRECATED* If you're looking at this, it's much more likely you want
+to use =RotaryEncoder=.
+
 Maps a potentiometer to two buttons - one for motion in the direction
 of increasing input values (the "up" direction), and one for motion in
 the opposite direction (the "down" direction).
@@ -227,6 +230,33 @@ that direction, at which time the opposite button is released. It
 maintains its own internal buffer of contiguous presses in one
 direction, so it probably does not make sense to use this with buttons
 wrapped in a =MomentaryButton=.
+
+**** RotaryEncoder
+
+Maps a rotary encoder onto two buttons: one for one direction, one for
+the other.
+
+Constructor:
+
+#+begin_src cpp
+  RotaryEncoder(DigitalInput* in1, DigitalInput in2,
+                Button* buttonForward, Button* buttonBackward,
+                int queueLimit);
+#+end_src
+
+Watches digital inputs =in1= and =in2=, which should be connected to
+the non-ground leads of a [[https://en.wikipedia.org/wiki/Rotary_encoder][rotary encoder]]. When the encoder is rotated
+in each direction, a DirectX button press/release for "forward" or
+"backward" is sent for each "click" of the encoder. Presses are
+enqueued (up to =queueLimit=), so if rotation of the physical control
+can get ahead of the DirectX presses. =queueLimit= should never be set
+lower than one.
+
+If your notion of forward and backward is the opposite of the DirectX
+events you're seeing, just reverse the order of the digital inputs.
+
+It probably doesn't make any sense to use this with a
+=MomentaryButton=, as =RotaryEncoder= is already inherently momentary.
 
 **** IC74LS151
 
